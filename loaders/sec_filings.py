@@ -54,7 +54,7 @@ def download_filings(filing_url: str, ticker:str):
             doc_res.raise_for_status()
             soup = BeautifulSoup(doc_res.text, "html.parser")
             return soup.get_text()
-    raise Exception("No 10-K HTML found in filing")
+    return None
 
 def save_filing(ticker: str, text: str, form_type="10-K"):
     folder = Path(f"data/filings/{ticker.lower()}")
@@ -62,9 +62,6 @@ def save_filing(ticker: str, text: str, form_type="10-K"):
     filename = folder / f"{form_type}_{int(time.time())}.txt"
     filename.write_text(text)
     print(f"[+] Saved filing to {filename}")
-
-# get_sec_filings_links('0000320193')
-# # 0000320193
 
 if __name__ == "__main__":
     ticker = "AAPL"

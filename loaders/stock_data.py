@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 def get_stock_data(ticker : str, 
-                   period: str = "1mo", 
+                   period: str = "2mo", 
                    interval: str = "1d",
                    include_history = False):
     stock = yf.Ticker(ticker)

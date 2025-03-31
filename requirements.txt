@@ -6,6 +6,7 @@ openai
 faiss-cpu
 faiss-gpu
 langchain
+langchain[community]
 transformers
 dotenv
 tiktoken

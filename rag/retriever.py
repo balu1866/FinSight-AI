@@ -1,42 +1,51 @@
 import openai
-import faiss
 import os
+import numpy as np
 
 from dotenv import load_dotenv
+import openai
+
+# from filings_prompt import PROMPT
 
 load_dotenv()
 
 
 
+PROMPT="""
+You are a financial analyst assistant. Use only the information provided in the SEC filing excerpts below to answer the user’s question.
 
-def load_vector_store():
-    index = faiss.read_index(os.getenv("VECTOR_STORE"))
+If the context does not contain enough information to answer the question, say "The filing does not provide a clear answer to that."
 
-    vector_map = {}
-
-    with open(os.getenv("VECTOR_MAPPING"), "r") as file:
-        for line in file:
-            idx, text = line.split("||")
-            vector_map[int(idx)] = text
-
-    return index, vector_map
+Context:
+{context}
 
 
-index, vector_map = load_vector_store()
+Question: {question}
 
+Answer:
+"""
 
-def get_similar_docs(query: str):
+model = os.getenv("OPENAI_EMBEDDING_MODEL")
+
+def ask_gpt(question: str, index, vector_map):
+
+    client = openai.Client(api_key=os.getenv("OPENAI_API_KEY"))
+
+    embed_question = client.embeddings.create(
+            input=question,
+            model=model
+        ).data[0].embedding
     
-    model = os.getenv("OPENAI_EMBEDDING_MODEL")
+    question_embedding = np.array(embed_question).astype("float32")
+    D, I = index.search(question_embedding.reshape(1, -1), 5)
+    context  = " ".join([vector_map[i] for i in I[0]])
 
-    response = openai.embeddings.create(
-        input=query,
-        model=model
+    response = client.chat.completions.create(
+        model = "chatgpt-4o-latest",
+        messages = [
+            {"role": "system", "content": "You are an intelligent assistant."},
+            {"role": "user", "content": PROMPT.format(context=context, question=question)}
+        ]
     )
-    embedded_query = response.data[0].embedding
 
-    D, I = index.search(embedded_query, k=3)
-
-    context = [vector_map[i] for i in I[0]]
-
-    return context
+    return response.choices[0].message.content
